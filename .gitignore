@@ -1,0 +1,11 @@
+build/
+*.o
+*.a
+*.so
+43
+*.dll
+*.exe
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
