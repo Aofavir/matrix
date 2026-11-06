@@ -10,7 +10,6 @@ Matrix matrix_multiply(const Matrix& A, const Matrix& B)
 {
     Matrix C = {nullptr, 0, 0, MATRIX_SUCCESS};
 
-    // Проверка размерностей
     if (A.rows <= 0 || A.cols <= 0 ||
         B.rows <= 0 || B.cols <= 0 ||
         A.cols != B.rows) {
@@ -18,27 +17,25 @@ Matrix matrix_multiply(const Matrix& A, const Matrix& B)
         return C;
     }
 
-    // Проверка указателей
     if (A.data == nullptr || B.data == nullptr) {
         C.error = MATRIX_INVALID_DATA;
         return C;
     }
 
-    for (int i = 0; i < A.rows; ++i) {
+    for (int i = 0; i < A.rows; i++) {
         if (A.data[i] == nullptr) {
             C.error = MATRIX_INVALID_DATA;
             return C;
         }
     }
 
-    for (int i = 0; i < B.rows; ++i) {
+    for (int i = 0; i < B.rows; i++) {
         if (B.data[i] == nullptr) {
             C.error = MATRIX_INVALID_DATA;
             return C;
         }
     }
 
-    // Выделение памяти
     C.data = new (std::nothrow) double*[A.rows];
 
     if (C.data == nullptr) {
@@ -51,15 +48,14 @@ Matrix matrix_multiply(const Matrix& A, const Matrix& B)
 
     int allocated = 0;
 
-    for (int i = 0; i < C.rows; ++i) {
+    for (int i = 0; i < C.rows; i++) {
         C.data[i] = new (std::nothrow) double[C.cols];
 
         if (C.data[i] == nullptr) {
-            for (int j = 0; j < allocated; ++j)
+            for (int j = 0; j < allocated; j++)
                 delete[] C.data[j];
 
             delete[] C.data;
-
             C.data = nullptr;
             C.rows = C.cols = 0;
             C.error = MATRIX_MEMORY_ERROR;
@@ -67,23 +63,18 @@ Matrix matrix_multiply(const Matrix& A, const Matrix& B)
             return C;
         }
 
-        ++allocated;
+        allocated++;
     }
 
-    // Инициализация результата
-    for (int i = 0; i < C.rows; ++i) {
-        for (int j = 0; j < C.cols; ++j) {
+    for (int i = 0; i < C.rows; i++) {
+        for (int j = 0; j < C.cols; j++) {
             C.data[i][j] = 0.0;
         }
     }
-
-    // Умножение матриц: оптимизированный порядок i-k-j
-    for (int i = 0; i < A.rows; ++i) {
-        for (int k = 0; k < A.cols; ++k) {
-            double temp = A.data[i][k];
-
-            for (int j = 0; j < B.cols; ++j) {
-                C.data[i][j] += temp * B.data[k][j];
+    for (int i = 0; i < A.rows; i++) {
+        for (int j = 0; j < A.cols; j++) {
+            for (int k = 0; k < B.cols; k++) {
+                C.data[i][j] += A.data[i][k] * B.data[k][j];
             }
         }
     }
@@ -95,7 +86,6 @@ Matrix matrix_add(const Matrix& A, const Matrix& B)
 {
     Matrix C = {nullptr, 0, 0, MATRIX_SUCCESS};
 
-    // Проверка размерностей
     if (A.rows <= 0 || A.cols <= 0 ||
         B.rows <= 0 || B.cols <= 0 ||
         A.rows != B.rows || A.cols != B.cols) {
@@ -103,7 +93,6 @@ Matrix matrix_add(const Matrix& A, const Matrix& B)
         return C;
     }
 
-    // Проверка указателей
     if (A.data == nullptr || B.data == nullptr) {
         C.error = MATRIX_INVALID_DATA;
         return C;
@@ -116,7 +105,6 @@ Matrix matrix_add(const Matrix& A, const Matrix& B)
         }
     }
 
-    // Выделение памяти
     C.data = new (std::nothrow) double*[A.rows];
 
     if (C.data == nullptr) {
@@ -126,18 +114,15 @@ Matrix matrix_add(const Matrix& A, const Matrix& B)
 
     C.rows = A.rows;
     C.cols = A.cols;
-
     int allocated = 0;
-
-    for (int i = 0; i < C.rows; ++i) {
+    for (int i = 0; i < C.rows; i++) {
         C.data[i] = new (std::nothrow) double[C.cols];
 
         if (C.data[i] == nullptr) {
-            for (int j = 0; j < allocated; ++j)
+            for (int j = 0; j < allocated; j++)
                 delete[] C.data[j];
 
             delete[] C.data;
-
             C.data = nullptr;
             C.rows = C.cols = 0;
             C.error = MATRIX_MEMORY_ERROR;
@@ -145,10 +130,9 @@ Matrix matrix_add(const Matrix& A, const Matrix& B)
             return C;
         }
 
-        ++allocated;
+        allocated++;
     }
 
-    // Сложение матриц
     for (int i = 0; i < A.rows; ++i) {
         for (int j = 0; j < A.cols; ++j) {
             C.data[i][j] = A.data[i][j] + B.data[i][j];
@@ -343,11 +327,11 @@ Matrix matrix_get_diagonal(Matrix m)
     }
     result.rows = size;
     result.cols = 1;
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < size; i++) {
         result.data[i] = new (std::nothrow) double[1];
 
         if (result.data[i] == nullptr) {
-            for (int j = 0; j < i; ++j) {
+            for (int j = 0; j < i; j++) {
                 delete[] result.data[j];
             }
             delete[] result.data;
@@ -358,5 +342,67 @@ Matrix matrix_get_diagonal(Matrix m)
         }
         result.data[i][0] = m.data[i][i];
     }
+    return result;
+}
+
+Matrix matrix_transpose(const Matrix& m)
+{
+    Matrix result = {nullptr, 0, 0, MATRIX_SUCCESS};
+
+    if (m.rows <= 0 || m.cols <= 0) {
+        result.error = MATRIX_INVALID_SIZE;
+        return result;
+    }
+
+    if (m.data == nullptr) {
+        result.error = MATRIX_INVALID_DATA;
+        return result;
+    }
+
+    for (int i = 0; i < m.rows; i++) {
+        if (m.data[i] == nullptr) {
+            result.error = MATRIX_INVALID_DATA;
+            return result;
+        }
+    }
+
+    result.rows = m.cols;
+    result.cols = m.rows;
+    result.data = new (std::nothrow) double*[result.rows];
+    if (result.data == nullptr) {
+        result.rows = 0;
+        result.cols = 0;
+        result.error = MATRIX_MEMORY_ERROR;
+        return result;
+    }
+
+    int allocated = 0;
+    for (int i = 0; i < result.rows; i++) {
+        result.data[i] =
+            new (std::nothrow) double[result.cols];
+
+        if (result.data[i] == nullptr) {
+            for (int j = 0; j < allocated; j++) {
+                delete[] result.data[j];
+            }
+
+            delete[] result.data;
+            result.data = nullptr;
+            result.rows = 0;
+            result.cols = 0;
+            result.error = MATRIX_MEMORY_ERROR;
+
+            return result;
+        }
+
+        allocated++;
+    }
+
+    for (int i = 0; i < result.rows; i++) {
+        for (int j = 0; j < result.cols; j++) {
+            result.data[i][j] = m.data[j][i];
+        }
+    }
+
     return result;
 }
